@@ -11,8 +11,8 @@ public class Url {
      * It should also have methods to see if a url is valid and if it's relative url from the main url
      */
 
-    private String url;
-    private String id;
+    private final String url;
+    private final String id;
 
     public Url(String url) {
         this.url = url;
@@ -27,4 +27,6 @@ public class Url {
     public String getUrl() {
         return url;
     }
+
+
 }

@@ -2,6 +2,7 @@ package com.axreng.backend;
 
 import com.axreng.backend.infrastructure.http.HttpClient;
 import com.axreng.backend.presentation.web.SparkAdapter;
+import com.axreng.backend.presentation.web.controllers.SearchTermController;
 import spark.Route;
 
 public class Main {
@@ -9,10 +10,9 @@ public class Main {
 
         HttpClient<Route> client = new SparkAdapter();
 
-        client.getResource("/crawl/:id", (req, res) ->
-                "GET /crawl/" + req.params("id"));
+        SearchTermController controller = new SearchTermController(client);
 
-        client.postResource("/crawl", (req, res) ->
-                "POST /crawl" + System.lineSeparator() + req.body());
+        controller.listen();
+
     }
 }
