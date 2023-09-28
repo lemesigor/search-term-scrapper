@@ -1,7 +1,4 @@
 package com.axreng.backend.infrastructure.http;
-import spark.Request;
-
-import java.util.function.Function;
 
 public interface HttpClient <TRoute>{
 

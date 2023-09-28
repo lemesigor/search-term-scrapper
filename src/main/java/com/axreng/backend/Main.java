@@ -1,10 +1,8 @@
 package com.axreng.backend;
 
 import com.axreng.backend.infrastructure.http.HttpClient;
-import com.axreng.backend.infrastructure.http.SparkAdapter;
+import com.axreng.backend.presentation.web.SparkAdapter;
 import spark.Route;
-
-import static spark.Spark.*;
 
 public class Main {
     public static void main(String[] args) {

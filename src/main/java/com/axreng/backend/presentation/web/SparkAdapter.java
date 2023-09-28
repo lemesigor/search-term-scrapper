@@ -1,11 +1,11 @@
-package com.axreng.backend.infrastructure.http;
+package com.axreng.backend.presentation.web;
 
+import com.axreng.backend.infrastructure.http.HttpClient;
 import spark.*;
 
-import java.util.function.Function;
 import static spark.Spark.*;
 
-public class SparkAdapter implements HttpClient<Route>{
+public class SparkAdapter implements HttpClient<Route> {
     @Override
     public String getResource(String path, Route handler) {
         get(path, handler);
