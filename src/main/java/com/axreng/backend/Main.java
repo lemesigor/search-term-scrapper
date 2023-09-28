@@ -1,5 +1,8 @@
 package com.axreng.backend;
 
+import com.axreng.backend.application.factory.RepositoryFactory;
+import com.axreng.backend.application.factory.UseCaseFactory;
+import com.axreng.backend.infrastructure.database.InMemoryDBFactory;
 import com.axreng.backend.infrastructure.http.HttpClient;
 import com.axreng.backend.presentation.web.SparkAdapter;
 import com.axreng.backend.presentation.web.controllers.SearchTermController;
@@ -16,7 +19,10 @@ public class Main {
 
         HttpClient<Route> client = new SparkAdapter();
 
-        SearchTermController controller = new SearchTermController(client, baseUrl);
+        RepositoryFactory inMemoryDBFactory = new InMemoryDBFactory();
+        UseCaseFactory useCaseFactory = new UseCaseFactory(inMemoryDBFactory);
+
+        SearchTermController controller = new SearchTermController(client, baseUrl, useCaseFactory);
 
         controller.listen();
 
