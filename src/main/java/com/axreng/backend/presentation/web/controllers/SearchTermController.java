@@ -3,6 +3,7 @@ package com.axreng.backend.presentation.web.controllers;
 import com.axreng.backend.application.factory.UseCaseFactory;
 import com.axreng.backend.infrastructure.http.HttpClient;
 import com.axreng.backend.presentation.web.controllers.requests.AddSearchTermDTO;
+import com.axreng.backend.presentation.web.controllers.responses.AddSearchTermResponseDTO;
 import com.axreng.backend.presentation.web.controllers.responses.DefaultErrorResponse;
 import com.google.gson.Gson;
 import org.eclipse.jetty.util.log.Slf4jLog;
@@ -28,8 +29,9 @@ public class SearchTermController {
         logger.info("Listening on /crawl route 4567");
 
 
-        httpClient.getResource("/crawl/:id", (request, response) ->
-                "GET /crawl/" + request.params("id"));
+        httpClient.getResource("/crawl/:id", (request, response) -> {
+            return "haha";
+        });
 
         httpClient.getResource("/crawl", (request, response) ->((useCaseFactory.createAddNewSearchTermUseCase().getAllSearchTerms())));
 
@@ -42,7 +44,7 @@ public class SearchTermController {
 
                 logger.info("POST /crawl " + wordRequest.getKeyword());
 
-                return new Gson().toJson(responseFromUseCase);
+                return new Gson().toJson(new AddSearchTermResponseDTO(responseFromUseCase));
 
             } catch (Exception e) {
                 var defaultErrorResponse = new DefaultErrorResponse(e.getMessage(), e);
