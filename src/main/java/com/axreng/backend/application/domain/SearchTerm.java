@@ -13,6 +13,9 @@ public class SearchTerm {
 
     private SearchStatus status;
 
+    private static final int MAXIMUM_WORD_LENGTH = 32;
+    private static final int MINIMUM_WORD_LENGTH = 4;
+
     public SearchTerm(String word) {
         if (isValidWord(word)) {
             this.word = word;
@@ -33,9 +36,7 @@ public class SearchTerm {
     }
 
     private boolean isValidWord(String word) {
-        int maximumWordLength = 32;
-        int minimumWordLength = 4;
-        return word.length() <= maximumWordLength && word.length() >= minimumWordLength;
+        return word.length() <= MAXIMUM_WORD_LENGTH && word.length() >= MINIMUM_WORD_LENGTH;
     }
 
     public synchronized void addUrl(String url) {
@@ -52,10 +53,6 @@ public class SearchTerm {
 
     public synchronized HashSet<String> getUrls() {
         return urls;
-    }
-
-    public synchronized void setUrls(HashSet<String> urls) {
-        this.urls = urls;
     }
 
 }

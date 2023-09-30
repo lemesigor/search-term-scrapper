@@ -1,5 +1,6 @@
 package com.axreng.backend.application.usecases;
 
+import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import org.eclipse.jetty.util.log.Logger;
@@ -27,11 +28,10 @@ public class ScrapeTermUseCase {
 
     private final String url;
 
-    private Set<String> visitedUrls;
-    private Set<String> foundUrls;
+    private final Set<String> visitedUrls;
+    private final Set<String> foundUrls;
 
-    private Set<String> resultSet;
-    private Logger logger = new Slf4jLog("TermScraper");
+    private final Logger logger = new Slf4jLog("TermScraper");
 
     private final ExecutorService executor;
 
@@ -56,21 +56,8 @@ public class ScrapeTermUseCase {
         this.url = System.getenv("BASE_URL");
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
-        this.resultSet = new HashSet<>();
         this.executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         this.count = new AtomicInteger(0);
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public Set<String> getResultSet() {
-        return resultSet;
-    }
-
-    public AtomicInteger getCount() {
-        return count;
     }
 
     public void execute(String termId) {
@@ -104,8 +91,7 @@ public class ScrapeTermUseCase {
 
             List<String> htmlContentLinesList = this.getHtmlContentLinesList(urlObj);
 
-            if (findKeyword(htmlContentLinesList, term)) {
-                this.resultSet.add(currentUrl);
+            if (searchKeyword(htmlContentLinesList, term)) {
                 this.temporarySearchTerm.addUrl(currentUrl);
                 updateSearchTermFoundUrls(this.temporarySearchTerm);
 //                logger.info("result set parcial: " + this.resultSet);
@@ -130,8 +116,11 @@ public class ScrapeTermUseCase {
 
         count.decrementAndGet();
 
-        if (count.get() == 0) {
-            logger.info("result set final de " + term + " "+ this.resultSet);
+        if (isFinalThreadInteraction()) {
+            logger.info("result set final de " + term + " "+ this.temporarySearchTerm.getUrls());
+
+            updateSearchTermStatusToDone(this.temporarySearchTerm);
+
             this.executor.shutdown();
         }
     }
@@ -180,6 +169,10 @@ public class ScrapeTermUseCase {
         return this.visitedUrls.contains(url);
     }
 
+    private Boolean isFinalThreadInteraction() {
+        return count.get() == 0;
+    }
+
     private URL constructNewUrl(URI uri, String currentUrl) throws MalformedURLException {
         String uriString = uri.toString();
 
@@ -199,7 +192,7 @@ public class ScrapeTermUseCase {
     }
 
 
-    private Boolean findKeyword(List<String> htmlAsLines, String keyword) {
+    private Boolean searchKeyword(List<String> htmlAsLines, String keyword) {
         String keywordPattern = "\\b" + keyword + "\\b";
         Pattern patternToFound = Pattern.compile(keywordPattern, Pattern.CASE_INSENSITIVE);
         return htmlAsLines.stream().anyMatch(line -> patternToFound.matcher(line).find());
@@ -225,5 +218,9 @@ public class ScrapeTermUseCase {
         repository.update(searchTerm);
     }
 
+    private void updateSearchTermStatusToDone(SearchTerm searchTerm) {
+        searchTerm.setStatus(SearchStatus.done);
+        repository.update(searchTerm);
+    }
 
 }
