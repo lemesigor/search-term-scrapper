@@ -33,12 +33,12 @@ public class SearchTermController {
             response.type(defaultResponseType);
             var id = request.params(":id");
 
-            try{
+            try {
                 var responseFromUseCase = useCaseFactory.createGetSearchTermResultsUseCase().execute(id);
 
-                if(responseFromUseCase.isEmpty()) {
+                if (responseFromUseCase.isEmpty()) {
                     response.status(404);
-                    var defaultErrorResponse = new DefaultErrorResponse("crawl not found: " + id , null);
+                    var defaultErrorResponse = new DefaultErrorResponse("crawl not found: " + id, null);
                     defaultErrorResponse.setStatus(response.status());
                     return new Gson().toJson(defaultErrorResponse);
                 }
@@ -55,18 +55,24 @@ public class SearchTermController {
 
         });
 
-        httpClient.getResource("/crawl", (request, response) ->((useCaseFactory.createAddNewSearchTermUseCase().getAllSearchTerms())));
+        httpClient.getResource("/crawl", (request, response) -> ((useCaseFactory.createAddNewSearchTermUseCase().getAllSearchTerms())));
 
         httpClient.postResource("/crawl", (request, response) -> {
             response.type(defaultResponseType);
 
-            try{
+            try {
                 var wordRequest = new Gson().fromJson(request.body(), AddSearchTermDTO.class);
-                var responseFromUseCase = useCaseFactory.createAddNewSearchTermUseCase().execute(wordRequest.getKeyword());
 
                 logger.info("POST /crawl " + wordRequest.getKeyword());
 
-                return new Gson().toJson(new AddSearchTermResponseDTO(responseFromUseCase));
+                var wordIdAfterCreated = useCaseFactory.createAddNewSearchTermUseCase().execute(wordRequest.getKeyword());
+
+                var startScrapeUseCase = useCaseFactory.createScrapeTermUseCase();
+                startScrapeUseCase.execute(wordIdAfterCreated);
+
+                logger.info("Scrape started");
+
+                return new Gson().toJson(new AddSearchTermResponseDTO(wordIdAfterCreated));
 
             } catch (Exception e) {
                 var defaultErrorResponse = new DefaultErrorResponse(e.getMessage(), e);
