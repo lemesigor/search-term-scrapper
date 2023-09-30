@@ -1,21 +1,17 @@
 package com.axreng.backend.application.domain;
 
-import com.axreng.backend.shared.HtmlNormalizationHelper;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.Slf4jLog;
 
-import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,8 +26,12 @@ public class TermScraper {
     private Set<String> foundUrls;
 
     private Set<String> resultSet;
-    private Logger logger = new Slf4jLog("TermScraper")
+    private Logger logger = new Slf4jLog("TermScraper");
 
+    private final ExecutorService executor;
+
+
+    private final AtomicInteger count;
 
     public TermScraper(String url, String term) {
         this.url = url;
@@ -39,6 +39,8 @@ public class TermScraper {
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
         this.resultSet = new HashSet<>();
+        this.executor = Executors.newFixedThreadPool(4);
+        this.count = new AtomicInteger(0);
     }
 
     public String getUrl() {
@@ -50,22 +52,26 @@ public class TermScraper {
     }
 
     public void execute() {
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-
-        executor.submit(() -> scrape(this.url));
-
-        executor.shutdown();
 
         try {
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            // Handle the exception
-            e.printStackTrace();
+            executor.submit(() -> scrape(this.url));
+
+            // Wait a while for existing tasks to terminate
+            if (!executor.awaitTermination(480, TimeUnit.SECONDS) && count.get() > 0) {
+                executor.shutdownNow(); // Cancel currently executing tasks
+                // Wait a while for tasks to respond to being cancelled
+                if (!executor.awaitTermination(100, TimeUnit.SECONDS))
+                    System.err.println("Pool did not terminate");
+            }
+        } catch (InterruptedException ex) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
-    private void scrape(String currentUrl) {
 
+    private void scrape(String currentUrl) {
+        count.incrementAndGet();
         try {
             final URL urlObj = new URL(currentUrl);
 
@@ -83,46 +89,56 @@ public class TermScraper {
             Map<String, URL> internalUrls = findInternalUrls(lines, currentUrl);
 
 
+
             for (URL internalUrl : internalUrls.values()) {
-                scrape(internalUrl.toString());
+                String newUrl = internalUrl.toString();
+
+                if (!visitedUrls.contains(newUrl)) {
+                    executor.submit(() -> scrape(newUrl));
+                    foundUrls.add(newUrl);
+                }
             }
             visitedUrls.add(currentUrl);
 
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn(e);
+        }
+
+        count.decrementAndGet();
+
+        if (count.get() == 0) {
+            logger.info("result set final: " + this.resultSet);
+            this.executor.shutdown();
         }
     }
 
     private Map<String, URL> findInternalUrls(List<String> lines, String actualUrl) throws MalformedURLException {
         Map<String, URL> internalUrls = new HashMap<>();
 
-        Pattern p = Pattern.compile("href=\"(.*?)\"", Pattern.DOTALL);
+        Pattern patternToFound = Pattern.compile("href=\"(.*?)\"", Pattern.DOTALL);
 
         for (String line : lines) {
-            Matcher m = p.matcher(line);
+            Matcher matcherResults = patternToFound.matcher(line);
 
-            while (m.find()) {
-                String urlStr = m.group().split("\"")[1];
+            while (matcherResults.find()) {
+                String urlString = matcherResults.group().split("\"")[1];
 
-
-                if (!urlStr.endsWith(".html") || urlStr.startsWith("mailto")) {
+                if (!urlString.endsWith(".html") || urlString.startsWith("mailto")) {
                     continue;
                 }
-                URI uri = URI.create(urlStr);
+                URI uri = URI.create(urlString);
 
-                URL url = contructUrl(uri, actualUrl);
+                URL url = contructNewUrl(uri, actualUrl);
 
                 if (url == null) {
                     continue;
                 }
 
-                urlStr = url.toString();
-                if (!this.foundUrls.contains(urlStr) && !this.visitedUrls.contains(urlStr) && !internalUrls.containsKey(urlStr)) {
-                    internalUrls.put(urlStr, url);
-                    this.foundUrls.add(urlStr);
+                urlString = url.toString();
+
+                if (!this.isUrlAlreadyFound(urlString) && !this.isUrlAlreadyVisited(urlString) && !internalUrls.containsKey(urlString)) {
+                    internalUrls.put(urlString, url);
+                    this.foundUrls.add(urlString);
                 }
             }
         }
@@ -130,14 +146,23 @@ public class TermScraper {
     }
 
 
-    private URL contructUrl(URI uri, String currentUrl) throws MalformedURLException {
-        String uriStr = uri.toString();
+
+    private Boolean isUrlAlreadyFound(String url) {
+        return this.foundUrls.contains(url);
+    }
+
+    private Boolean isUrlAlreadyVisited(String url) {
+        return this.visitedUrls.contains(url);
+    }
+
+    private URL contructNewUrl(URI uri, String currentUrl) throws MalformedURLException {
+        String uriString = uri.toString();
 
         if (uri.isAbsolute()) {
-            if (uriStr.contains(currentUrl)) {
+            if (uriString.contains(currentUrl)) {
                 return new URL(uri.toString());
             }
-        } else if (uriStr.startsWith("../")) {
+        } else if (uriString.startsWith("../")) {
             return new URL(this.url + uri.toString().replace("../", ""));
         } else {
             return new URL(this.url + uri);
@@ -158,6 +183,7 @@ public class TermScraper {
 
         BufferedReader htmlLines = new BufferedReader(new InputStreamReader(url.openStream()));
         Stream<String> lines = htmlLines.lines();
+        htmlLines.close();
 
         return lines.collect(Collectors.toList());
     }
