@@ -1,7 +1,6 @@
 package com.axreng.backend.application.usecases;
 
 import com.axreng.backend.application.domain.SearchTerm;
-import com.axreng.backend.application.domain.TermScraper;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 
 import java.util.List;

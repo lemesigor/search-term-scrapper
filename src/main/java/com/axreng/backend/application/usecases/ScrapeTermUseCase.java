@@ -126,7 +126,7 @@ public class ScrapeTermUseCase {
         count.decrementAndGet();
 
         if (count.get() == 0) {
-            logger.info("result set final: " + this.resultSet);
+            logger.info("result set final de " + term + " "+ this.resultSet);
             this.executor.shutdown();
         }
     }
@@ -194,7 +194,6 @@ public class ScrapeTermUseCase {
     }
 
 
-    // achar keyword e url em um loop só
     private Boolean findKeyword(List<String> htmlAsLines, String keyword) {
         String keywordPattern = "\\b" + keyword + "\\b";
         Pattern patternToFound = Pattern.compile(keywordPattern, Pattern.CASE_INSENSITIVE);

@@ -5,6 +5,7 @@ import com.axreng.backend.infrastructure.http.HttpClient;
 import com.axreng.backend.presentation.web.controllers.requests.AddSearchTermDTO;
 import com.axreng.backend.presentation.web.controllers.responses.AddSearchTermResponseDTO;
 import com.axreng.backend.presentation.web.controllers.responses.DefaultErrorResponse;
+import com.axreng.backend.presentation.web.controllers.responses.SearchTermsResultsResponseDTO;
 import com.google.gson.Gson;
 import org.eclipse.jetty.util.log.Slf4jLog;
 import spark.Route;
@@ -33,19 +34,20 @@ public class SearchTermController {
             response.type(defaultResponseType);
             var id = request.params(":id");
 
-            try {
-                var responseFromUseCase = useCaseFactory.createGetSearchTermResultsUseCase().execute(id);
+            logger.info("GET /crawl/" + id);
 
-                if (responseFromUseCase.isEmpty()) {
+            try {
+                var searchTermResults = useCaseFactory.createGetSearchTermResultsUseCase().execute(id);
+
+                if (searchTermResults.isEmpty()) {
                     response.status(404);
                     var defaultErrorResponse = new DefaultErrorResponse("crawl not found: " + id, null);
                     defaultErrorResponse.setStatus(response.status());
                     return new Gson().toJson(defaultErrorResponse);
                 }
 
-                logger.info("GET /crawl/" + id);
 
-                return new Gson().toJson(responseFromUseCase);
+                return new Gson().toJson(SearchTermsResultsResponseDTO.fromDomain(searchTermResults.get()));
 
             } catch (Exception e) {
                 var defaultErrorResponse = new DefaultErrorResponse(e.getMessage(), e);
