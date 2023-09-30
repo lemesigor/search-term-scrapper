@@ -3,7 +3,7 @@ package com.axreng.backend.presentation.web.controllers.responses;
 public class DefaultErrorResponse {
 
     private final String message;
-    private final Integer status;
+    private Integer status;
 
 
     public Integer getStatus() {
@@ -22,5 +22,9 @@ public class DefaultErrorResponse {
 
     public String getMessage() {
         return message;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 }

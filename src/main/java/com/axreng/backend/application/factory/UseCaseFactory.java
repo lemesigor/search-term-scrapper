@@ -1,6 +1,7 @@
 package com.axreng.backend.application.factory;
 
 import com.axreng.backend.application.usecases.AddNewSearchTermUseCase;
+import com.axreng.backend.application.usecases.GetSearchTermResults;
 
 public class UseCaseFactory {
 
@@ -12,5 +13,9 @@ public class UseCaseFactory {
 
     public AddNewSearchTermUseCase createAddNewSearchTermUseCase() {
         return new AddNewSearchTermUseCase(repositoryFactory.createSearchTermRepository());
+    }
+
+    public GetSearchTermResults createGetSearchTermResultsUseCase() {
+        return new GetSearchTermResults(repositoryFactory.createSearchTermRepository());
     }
 }

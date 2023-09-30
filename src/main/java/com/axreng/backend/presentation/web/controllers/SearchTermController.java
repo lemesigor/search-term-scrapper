@@ -30,7 +30,29 @@ public class SearchTermController {
 
 
         httpClient.getResource("/crawl/:id", (request, response) -> {
-            return "haha";
+            response.type(defaultResponseType);
+            var id = request.params(":id");
+
+            try{
+                var responseFromUseCase = useCaseFactory.createGetSearchTermResultsUseCase().execute(id);
+
+                if(responseFromUseCase.isEmpty()) {
+                    response.status(404);
+                    var defaultErrorResponse = new DefaultErrorResponse("crawl not found: " + id , null);
+                    defaultErrorResponse.setStatus(response.status());
+                    return new Gson().toJson(defaultErrorResponse);
+                }
+
+                logger.info("GET /crawl/" + id);
+
+                return new Gson().toJson(responseFromUseCase);
+
+            } catch (Exception e) {
+                var defaultErrorResponse = new DefaultErrorResponse(e.getMessage(), e);
+                response.status(defaultErrorResponse.getStatus());
+                return new Gson().toJson(defaultErrorResponse);
+            }
+
         });
 
         httpClient.getResource("/crawl", (request, response) ->((useCaseFactory.createAddNewSearchTermUseCase().getAllSearchTerms())));

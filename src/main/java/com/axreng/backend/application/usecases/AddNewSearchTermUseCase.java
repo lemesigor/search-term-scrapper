@@ -17,11 +17,8 @@ public class AddNewSearchTermUseCase {
 
     }
 
-    public String execute(String url) {
-        TermScraper termScraper = new TermScraper(System.getenv("BASE_URL"), url);
-
-        termScraper.execute();
-        return repository.save(url);
+    public String execute(String word) {
+        return repository.save(word);
     }
 
     public List<SearchTerm> getAllSearchTerms() {
