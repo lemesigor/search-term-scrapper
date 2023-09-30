@@ -1,5 +1,6 @@
 package com.axreng.backend.application.usecases;
 
+import com.axreng.backend.application.domain.SearchTerm;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.Slf4jLog;
@@ -47,6 +48,8 @@ public class ScrapeTermUseCase {
 
     private static final Integer THREAD_TIMEOUT = 1200;
 
+    private SearchTerm temporarySearchTerm;
+
 
     public ScrapeTermUseCase(SearchTermRepository repository) {
         this.repository = repository;
@@ -70,25 +73,25 @@ public class ScrapeTermUseCase {
         return count;
     }
 
-    public CompletableFuture<Void> execute(String termId) {
-        String term = repository.findById(termId).get().getWord();
+    public void execute(String termId) {
+        this.temporarySearchTerm = repository.findById(termId).get();
 
-        logger.info("Starting scraper for url: " + this.url + "and term: " + term);
+        logger.info("Starting scraper for url: " + this.url + "and term: " + this.temporarySearchTerm.getWord());
 
-        return CompletableFuture.runAsync(() ->{
-        try {
-            executor.submit(() -> scrape(this.url, term));
+        CompletableFuture.runAsync(() -> {
+            try {
+                executor.submit(() -> scrape(this.url, this.temporarySearchTerm.getWord()));
 
-            if (!executor.awaitTermination(THREAD_TIMEOUT, TimeUnit.SECONDS) && count.get() > 0) {
-                executor.shutdownNow(); // Cancel currently executing tasks
-                if (!executor.awaitTermination(100, TimeUnit.SECONDS))
-                    logger.warn("Pool did not terminate");
+                if (!executor.awaitTermination(THREAD_TIMEOUT, TimeUnit.SECONDS) && count.get() > 0) {
+                    executor.shutdownNow(); // Cancel currently executing tasks
+                    if (!executor.awaitTermination(100, TimeUnit.SECONDS))
+                        logger.warn("Pool did not terminate");
+                }
+            } catch (InterruptedException ex) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException ex) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-    }, executor);
+        }, executor);
     }
 
 
@@ -103,6 +106,8 @@ public class ScrapeTermUseCase {
 
             if (findKeyword(htmlContentLinesList, term)) {
                 this.resultSet.add(currentUrl);
+                this.temporarySearchTerm.addUrl(currentUrl);
+                updateSearchTermFoundUrls(this.temporarySearchTerm);
 //                logger.info("result set parcial: " + this.resultSet);
             }
 
@@ -215,5 +220,10 @@ public class ScrapeTermUseCase {
 
         return linesList;
     }
+
+    private void updateSearchTermFoundUrls(SearchTerm searchTerm) {
+        repository.update(searchTerm);
+    }
+
 
 }

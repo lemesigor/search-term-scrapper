@@ -7,9 +7,12 @@ import java.util.Optional;
 
 public interface SearchTermRepository {
 
-    String save(String url);
+    String save(String word);
     Optional<SearchTerm> findById(String id);
 
     List<SearchTerm> findAll();
+
+
+    void update(SearchTerm searchTerm);
 
 }

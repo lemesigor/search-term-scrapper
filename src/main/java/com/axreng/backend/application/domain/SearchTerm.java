@@ -54,4 +54,8 @@ public class SearchTerm {
         return urls;
     }
 
+    public synchronized void setUrls(HashSet<String> urls) {
+        this.urls = urls;
+    }
+
 }

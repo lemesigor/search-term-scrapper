@@ -2,15 +2,11 @@ package com.axreng.backend.infrastructure.storage;
 
 import com.axreng.backend.application.domain.SearchTerm;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class SearchTermRepositoryInMemory implements SearchTermRepository {
 
-    Map<String, String> searchTermsRepository = new HashMap<String, String>();
+    Map<String,SearchTerm > searchTermsRepository = new HashMap<String, SearchTerm>();
 
     private static final SearchTermRepositoryInMemory instance = new SearchTermRepositoryInMemory();
 
@@ -24,7 +20,7 @@ public class SearchTermRepositoryInMemory implements SearchTermRepository {
         public String save(String word) {
             var searchTerm = new SearchTerm(word);
 
-            searchTermsRepository.put(searchTerm.getId(), searchTerm.getWord());
+            searchTermsRepository.put(searchTerm.getId(), searchTerm);
             return searchTerm.getId();
 
         }
@@ -32,13 +28,18 @@ public class SearchTermRepositoryInMemory implements SearchTermRepository {
         @Override
         public Optional<SearchTerm> findById(String id) {
             if(searchTermsRepository.containsKey(id)){
-                return Optional.of(new SearchTerm(searchTermsRepository.get(id)));
+                return Optional.of(searchTermsRepository.get(id));
             }
             return Optional.empty();
         }
 
     @Override
+    public void update(SearchTerm searchTerm) {
+        searchTermsRepository.put(searchTerm.getId(), searchTerm);
+    }
+
+    @Override
     public List<SearchTerm> findAll() {
-        return searchTermsRepository.values().stream().map(SearchTerm::new).collect(Collectors.toList());
+        return new ArrayList<>(searchTermsRepository.values());
     }
 }
