@@ -33,13 +33,23 @@ public class TermScraper {
 
     private final AtomicInteger count;
 
+    private static final String HTML_EXTENSION = ".html";
+    private static final String MAILTO_PREFIX = "mailto";
+
+    private static final String ANCHOR_LINK_REGEX = "href=\"(.*?)\"";
+
+    private static final Integer THREAD_POOL_SIZE = 4;
+
+    private static final Integer THREAD_TIMEOUT = 1200;
+
+
     public TermScraper(String url, String term) {
         this.url = url;
         this.term = term;
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
         this.resultSet = new HashSet<>();
-        this.executor = Executors.newFixedThreadPool(4);
+        this.executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         this.count = new AtomicInteger(0);
     }
 
@@ -51,17 +61,24 @@ public class TermScraper {
         return term;
     }
 
+    public Set<String> getResultSet() {
+        return resultSet;
+    }
+
+    public AtomicInteger getCount() {
+        return count;
+    }
+
     public void execute() {
+        logger.info("Starting scraper for url: " + this.url + "and term: " + this.term);
 
         try {
             executor.submit(() -> scrape(this.url));
 
-            // Wait a while for existing tasks to terminate
-            if (!executor.awaitTermination(480, TimeUnit.SECONDS) && count.get() > 0) {
+            if (!executor.awaitTermination(THREAD_TIMEOUT, TimeUnit.SECONDS) && count.get() > 0) {
                 executor.shutdownNow(); // Cancel currently executing tasks
-                // Wait a while for tasks to respond to being cancelled
                 if (!executor.awaitTermination(100, TimeUnit.SECONDS))
-                    System.err.println("Pool did not terminate");
+                    logger.warn("Pool did not terminate");
             }
         } catch (InterruptedException ex) {
             executor.shutdownNow();
@@ -71,33 +88,30 @@ public class TermScraper {
 
 
     private void scrape(String currentUrl) {
+
         count.incrementAndGet();
+
         try {
             final URL urlObj = new URL(currentUrl);
 
-            List<String> lines = this.getHtmlLines(urlObj);
+            List<String> htmlContentLinesList = this.getHtmlContentLinesList(urlObj);
 
-
-            if (findKeyword(lines, this.term)) {
-                logger.info("achou");
+            if (findKeyword(htmlContentLinesList, this.term)) {
                 this.resultSet.add(currentUrl);
-
-                logger.info("Result set atualizado: " + this.resultSet);
+//                logger.info("result set parcial: " + this.resultSet);
             }
 
-
-            Map<String, URL> internalUrls = findInternalUrls(lines, currentUrl);
-
-
+            Map<String, URL> internalUrls = findInternalUrlsForCurrentPage(htmlContentLinesList, currentUrl);
 
             for (URL internalUrl : internalUrls.values()) {
                 String newUrl = internalUrl.toString();
 
-                if (!visitedUrls.contains(newUrl)) {
+                if (!this.isUrlAlreadyVisited(newUrl)) {
                     executor.submit(() -> scrape(newUrl));
                     foundUrls.add(newUrl);
                 }
             }
+
             visitedUrls.add(currentUrl);
 
         } catch (IOException e) {
@@ -112,10 +126,10 @@ public class TermScraper {
         }
     }
 
-    private Map<String, URL> findInternalUrls(List<String> lines, String actualUrl) throws MalformedURLException {
+    private Map<String, URL> findInternalUrlsForCurrentPage(List<String> lines, String actualUrl) throws MalformedURLException {
         Map<String, URL> internalUrls = new HashMap<>();
 
-        Pattern patternToFound = Pattern.compile("href=\"(.*?)\"", Pattern.DOTALL);
+        Pattern patternToFound = Pattern.compile(ANCHOR_LINK_REGEX, Pattern.DOTALL);
 
         for (String line : lines) {
             Matcher matcherResults = patternToFound.matcher(line);
@@ -123,12 +137,13 @@ public class TermScraper {
             while (matcherResults.find()) {
                 String urlString = matcherResults.group().split("\"")[1];
 
-                if (!urlString.endsWith(".html") || urlString.startsWith("mailto")) {
+                if (!shouldIncludeUrl(urlString)) {
                     continue;
                 }
+
                 URI uri = URI.create(urlString);
 
-                URL url = contructNewUrl(uri, actualUrl);
+                URL url = constructNewUrl(uri, actualUrl);
 
                 if (url == null) {
                     continue;
@@ -155,36 +170,45 @@ public class TermScraper {
         return this.visitedUrls.contains(url);
     }
 
-    private URL contructNewUrl(URI uri, String currentUrl) throws MalformedURLException {
+    private URL constructNewUrl(URI uri, String currentUrl) throws MalformedURLException {
         String uriString = uri.toString();
 
-        if (uri.isAbsolute()) {
-            if (uriString.contains(currentUrl)) {
-                return new URL(uri.toString());
-            }
-        } else if (uriString.startsWith("../")) {
-            return new URL(this.url + uri.toString().replace("../", ""));
-        } else {
+        if (uri.isAbsolute() && uriString.contains(currentUrl)) {
+            return new URL(uriString);
+        }
+
+        if (uriString.startsWith("../")){
+            return new URL(this.url + uriString.replace("../", ""));
+        }
+
+        if (!uri.isAbsolute()) {
             return new URL(this.url + uri);
         }
 
         return null;
     }
 
+
     // achar keyword e url em um loop só
-    private Boolean findKeyword(List<String> lines, String keyword) {
+    private Boolean findKeyword(List<String> htmlAsLines, String keyword) {
         String keywordPattern = "\\b" + keyword + "\\b";
-        Pattern p = Pattern.compile(keywordPattern, Pattern.CASE_INSENSITIVE);
-        return lines.stream().anyMatch(line -> p.matcher(line).find());
+        Pattern patternToFound = Pattern.compile(keywordPattern, Pattern.CASE_INSENSITIVE);
+        return htmlAsLines.stream().anyMatch(line -> patternToFound.matcher(line).find());
     }
 
+    private boolean shouldIncludeUrl(String urlString) {
+        return urlString.endsWith(HTML_EXTENSION) && !urlString.startsWith(MAILTO_PREFIX);
+    }
 
-    public List<String> getHtmlLines(URL url) throws IOException {
+    public List<String> getHtmlContentLinesList(URL url) throws IOException {
 
         BufferedReader htmlLines = new BufferedReader(new InputStreamReader(url.openStream()));
         Stream<String> lines = htmlLines.lines();
+
+        var linesList = lines.collect(Collectors.toList());
+
         htmlLines.close();
 
-        return lines.collect(Collectors.toList());
+        return linesList;
     }
 }
