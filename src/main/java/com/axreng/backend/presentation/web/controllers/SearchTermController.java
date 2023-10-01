@@ -7,7 +7,8 @@ import com.axreng.backend.presentation.web.controllers.responses.AddSearchTermRe
 import com.axreng.backend.presentation.web.controllers.responses.DefaultErrorResponse;
 import com.axreng.backend.presentation.web.controllers.responses.SearchTermsResultsResponseDTO;
 import com.google.gson.Gson;
-import org.eclipse.jetty.util.log.Slf4jLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Route;
 
 public class SearchTermController {
@@ -18,6 +19,8 @@ public class SearchTermController {
     private final UseCaseFactory useCaseFactory;
     private final String defaultResponseType = "application/json";
 
+    private final Logger logger = LoggerFactory.getLogger(SearchTermController.class);
+
     public SearchTermController(HttpClient<Route> httpClient, String baseUrl, UseCaseFactory useCaseFactory) {
         this.httpClient = httpClient;
         this.baseUrl = baseUrl;
@@ -26,7 +29,6 @@ public class SearchTermController {
 
     public void listen() {
 
-        var logger = new Slf4jLog("SearchTermController");
         logger.info("Listening on /crawl route 4567");
 
 

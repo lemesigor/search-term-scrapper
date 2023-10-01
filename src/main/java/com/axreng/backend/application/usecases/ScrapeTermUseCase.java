@@ -4,8 +4,9 @@ import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import com.axreng.backend.infrastructure.threads.TaskQueue;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.Slf4jLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,7 +30,7 @@ public class ScrapeTermUseCase {
     private final Set<String> visitedUrls;
     private final Set<String> foundUrls;
 
-    private final Logger logger = new Slf4jLog("TermScraper");
+    private final Logger logger =  LoggerFactory.getLogger(ScrapeTermUseCase.class);
 
     private final TaskQueue poolService;
 
@@ -98,7 +99,7 @@ public class ScrapeTermUseCase {
             visitedUrlsCount.incrementAndGet();
 
         } catch (IOException e) {
-            logger.warn(e);
+            logger.error(e.getMessage());
         }
 
 

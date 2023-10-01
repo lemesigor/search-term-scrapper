@@ -4,6 +4,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ThreadPoolService implements TaskQueue {
     private static final ThreadPoolService instance = new ThreadPoolService();
@@ -12,19 +14,24 @@ public class ThreadPoolService implements TaskQueue {
     private static final Integer THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
     private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
+    private static final Logger logger = LoggerFactory.getLogger(ThreadPoolService.class);
+
     private ThreadPoolService() {
     }
 
     public static ThreadPoolService getInstance() {
-        //TODO : trocar por logger factory
-        System.out.println("THREAD_POOL_SIZE: " + THREAD_POOL_SIZE);
+        logger.info("Thread pool started with " + THREAD_POOL_SIZE + " threads");
         return instance;
     }
 
 
-    @Override
-    public Executor getExecutor() {
+    private static Executor getExecutorInstance () {
         return executor;
+    }
+
+    @Override
+    public  Executor getExecutor() {
+        return getExecutorInstance();
     }
 
     @Override
@@ -32,7 +39,7 @@ public class ThreadPoolService implements TaskQueue {
         try {
             executor.submit(task);
         } catch (Exception e) {
-            System.out.println("Erro ao executar tarefa");
+            logger.error("Error adding task to thread pool: " + e.getMessage());
         }
     }
 
@@ -43,11 +50,12 @@ public class ThreadPoolService implements TaskQueue {
             if (!executor.awaitTermination(THREAD_TIMEOUT, TimeUnit.SECONDS)) {
                 executor.shutdownNow(); // Cancel currently executing tasks
                 if (!executor.awaitTermination(100, TimeUnit.SECONDS))
-                    System.out.println("Pool did not terminate");
+                    logger.warn("Pool did not terminate");
             }
         } catch (InterruptedException ex) {
             executor.shutdownNow();
             Thread.currentThread().interrupt();
+            logger.error("Error stopping thread pool: " + ex.getMessage());
         }
     }
 }
