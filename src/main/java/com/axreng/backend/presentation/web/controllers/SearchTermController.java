@@ -70,7 +70,7 @@ public class SearchTermController {
                 var wordIdAfterCreated = useCaseFactory.createAddNewSearchTermUseCase().execute(wordRequest.getKeyword());
 
                 var startScrapeUseCase = useCaseFactory.createScrapeTermUseCase();
-                startScrapeUseCase.execute(wordIdAfterCreated);
+                startScrapeUseCase.execute(wordIdAfterCreated, baseUrl);
 
                 logger.info("Scrape started");
 

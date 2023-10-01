@@ -1,7 +1,10 @@
 package com.axreng.backend.infrastructure.threads;
 
-public interface TaskQueueInterface {
+import java.util.concurrent.Executor;
+
+public interface TaskQueue {
     void addTask(Runnable task);
-    void start();
     void stop();
+
+    Executor getExecutor();
 }

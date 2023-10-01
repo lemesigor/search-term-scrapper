@@ -3,6 +3,7 @@ package com.axreng.backend.application.usecases;
 import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
+import com.axreng.backend.infrastructure.threads.TaskQueue;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.Slf4jLog;
 
@@ -14,9 +15,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,19 +24,19 @@ import java.util.stream.Stream;
 public class ScrapeTermUseCase {
 
 
-    private final String url;
+    private  String url;
 
     private final Set<String> visitedUrls;
     private final Set<String> foundUrls;
 
     private final Logger logger = new Slf4jLog("TermScraper");
 
-    private final ExecutorService executor;
+    private final TaskQueue poolService;
 
 
     private final SearchTermRepository repository;
-    private final AtomicInteger count;
-
+    private final AtomicInteger totalUrlsToVisit;
+    private final AtomicInteger visitedUrlsCount;
     private static final String HTML_EXTENSION = ".html";
     private static final String MAILTO_PREFIX = "mailto";
 
@@ -50,30 +48,29 @@ public class ScrapeTermUseCase {
     private SearchTerm temporarySearchTerm;
 
 
-    public ScrapeTermUseCase(SearchTermRepository repository, ExecutorService executor) {
+    public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService) {
         this.repository = repository;
-        this.url = System.getenv("BASE_URL");
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
-        this.count = new AtomicInteger(0);
-        this.executor = executor;
+        this.totalUrlsToVisit = new AtomicInteger(1);
+        this.visitedUrlsCount = new AtomicInteger(0);
+        this.poolService = poolService;
     }
 
-    public void execute(String termId) {
+    public void execute(String termId, String baseUrl) {
         this.temporarySearchTerm = repository.findById(termId).get();
+        this.url = baseUrl;
 
         logger.info("Starting scraper for url: " + this.url + " and term: " + this.temporarySearchTerm.getWord());
 
         CompletableFuture.runAsync(() -> {
-            executor.submit(() -> scrape(this.url, this.temporarySearchTerm.getWord()));
+            poolService.addTask(() -> scrape(this.url, this.temporarySearchTerm.getWord()));
 
-        },executor);
+        }, poolService.getExecutor());
     }
 
 
     private void scrape(String currentUrl, String term) {
-
-        count.incrementAndGet();
 
         try {
             final URL urlObj = new URL(currentUrl);
@@ -91,25 +88,25 @@ public class ScrapeTermUseCase {
                 String newUrl = internalUrl.toString();
 
                 if (!this.isUrlAlreadyVisited(newUrl)) {
-                    executor.submit(() -> scrape(newUrl, term));
+                    totalUrlsToVisit.incrementAndGet();
+                    poolService.addTask(() -> scrape(newUrl, term));
                     foundUrls.add(newUrl);
                 }
             }
 
             visitedUrls.add(currentUrl);
+            visitedUrlsCount.incrementAndGet();
 
         } catch (IOException e) {
             logger.warn(e);
         }
 
-        count.decrementAndGet();
 
         if (isFinalThreadInteraction()) {
             logger.info("result set final de " + term + " "+ this.temporarySearchTerm.getUrls());
 
             updateSearchTermStatusToDone(this.temporarySearchTerm);
 
-//            this.executor.shutdown();
         }
     }
 
@@ -158,7 +155,7 @@ public class ScrapeTermUseCase {
     }
 
     private Boolean isFinalThreadInteraction() {
-        return count.get() == 0;
+        return totalUrlsToVisit.get() == visitedUrlsCount.get();
     }
 
     private URL constructNewUrl(URI uri, String currentUrl) throws MalformedURLException {

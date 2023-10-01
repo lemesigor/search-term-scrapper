@@ -24,6 +24,6 @@ public class UseCaseFactory {
     }
 
     public ScrapeTermUseCase createScrapeTermUseCase() {
-        return new ScrapeTermUseCase(repositoryFactory.createSearchTermRepository(), ThreadPoolService.getInstance().getExecutor());
+        return new ScrapeTermUseCase(repositoryFactory.createSearchTermRepository(), ThreadPoolService.getInstance());
     }
 }
