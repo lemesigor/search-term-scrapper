@@ -3,15 +3,15 @@ package com.axreng.backend.infrastructure.cache;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class WebSiteCache {
+public class SiteMapCacheInMemory {
 
     private static final ConcurrentHashMap<String, List<String>>  siteListCached = new ConcurrentHashMap<>();
 
-    private static final WebSiteCache instance = new WebSiteCache();
-    private WebSiteCache() {
+    private static final SiteMapCacheInMemory instance = new SiteMapCacheInMemory();
+    private SiteMapCacheInMemory() {
     }
 
-    public static WebSiteCache getInstance() {
+    public static SiteMapCacheInMemory getInstance() {
         return instance;
     }
 

@@ -2,7 +2,7 @@ package com.axreng.backend.application.usecases;
 
 import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
-import com.axreng.backend.infrastructure.cache.WebSiteCache;
+import com.axreng.backend.infrastructure.cache.SiteMapCacheInMemory;
 import com.axreng.backend.infrastructure.parser.HtmlParser;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import com.axreng.backend.infrastructure.threads.TaskQueue;
@@ -46,7 +46,7 @@ public class ScrapeTermUseCase {
 
     private final HtmlParser htmlParser;
 
-    private final WebSiteCache webSiteCache = WebSiteCache.getInstance();
+    private final SiteMapCacheInMemory siteMapCacheInMemory = SiteMapCacheInMemory.getInstance();
 
     public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService, HtmlParser htmlParser) {
         this.repository = repository;
@@ -80,11 +80,11 @@ public class ScrapeTermUseCase {
         List<String> htmlContentLinesList;
 
         try {
-            if (!this.webSiteCache.containsKey(currentUrl)) {
+            if (!this.siteMapCacheInMemory.containsKey(currentUrl)) {
                 htmlContentLinesList = this.htmlParser.parseContentAsStringList(currentUrl);
-                this.webSiteCache.put(currentUrl, htmlContentLinesList);
+                this.siteMapCacheInMemory.put(currentUrl, htmlContentLinesList);
             } else {
-                htmlContentLinesList = this.webSiteCache.get(currentUrl);
+                htmlContentLinesList = this.siteMapCacheInMemory.get(currentUrl);
             }
 
             if (this.htmlParser.hasKeywordInHtmlAsStringList(htmlContentLinesList, term)) {
