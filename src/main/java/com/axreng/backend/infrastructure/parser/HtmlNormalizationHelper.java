@@ -1,10 +1,9 @@
-package com.axreng.backend.shared;
+package com.axreng.backend.infrastructure.parser;
 
 import java.text.Normalizer;
 
 public class HtmlNormalizationHelper {
     private HtmlNormalizationHelper() {
-        // Private constructor to prevent instantiation
     }
 
 

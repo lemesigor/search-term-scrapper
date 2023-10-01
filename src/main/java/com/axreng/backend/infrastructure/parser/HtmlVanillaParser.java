@@ -17,7 +17,7 @@ public class HtmlVanillaParser implements HtmlParser{
            BufferedReader htmlLines = new BufferedReader(new InputStreamReader(url.openStream()));
             Stream<String> lines = htmlLines.lines();
 
-            var linesList = lines.collect(Collectors.toList());
+            var linesList = lines.collect(Collectors.toList()).stream().map(HtmlNormalizationHelper::normalizeHtml).collect(Collectors.toList());
 
             htmlLines.close();
 

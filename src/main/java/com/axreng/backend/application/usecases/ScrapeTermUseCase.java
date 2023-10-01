@@ -66,11 +66,10 @@ public class ScrapeTermUseCase {
 
         this.url = baseUrl;
 
-        String wordRegexPattern = "\\b" + this.temporarySearchTerm.getWord() + "\\b";
 
         logger.info("Starting scraper for url: " + this.url + " and term: " + this.temporarySearchTerm.getWord());
 
-        CompletableFuture.runAsync(() -> poolService.addTask(() -> scrape(this.url, wordRegexPattern)), poolService.getExecutor());
+        CompletableFuture.runAsync(() -> poolService.addTask(() -> scrape(this.url, this.temporarySearchTerm.getWord())), poolService.getExecutor());
     }
 
 
