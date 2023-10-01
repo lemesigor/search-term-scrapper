@@ -3,13 +3,13 @@ package com.axreng.backend.application.domain;
 import com.axreng.backend.shared.Errors;
 import com.axreng.backend.shared.RandomIdGenerator;
 
-import java.util.HashSet;
+import java.util.TreeSet;
 
 public class SearchTerm {
     private final String word;
     private final String id;
 
-    private HashSet<String> urls;
+    private final TreeSet<String> urls;
 
     private SearchStatus status;
 
@@ -20,7 +20,7 @@ public class SearchTerm {
         if (isValidWord(word)) {
             this.word = word;
             this.id = RandomIdGenerator.generateRandomId(8);
-            this.urls = new HashSet<>();
+            this.urls = new TreeSet<>();
             this.status = SearchStatus.active;
         } else {
             throw new IllegalArgumentException(Errors.INVALID_WORD_ERROR);
@@ -51,7 +51,7 @@ public class SearchTerm {
         return status;
     }
 
-    public synchronized HashSet<String> getUrls() {
+    public synchronized TreeSet<String> getUrls() {
         return urls;
     }
 
