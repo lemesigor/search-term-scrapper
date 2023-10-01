@@ -5,10 +5,10 @@ import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 
 import java.util.Optional;
 
-public class GetSearchTermResults {
+public class GetSearchTermResultsUseCase {
     private final SearchTermRepository repository;
 
-    public GetSearchTermResults(SearchTermRepository repository) {
+    public GetSearchTermResultsUseCase(SearchTermRepository repository) {
         this.repository = repository;
     }
 
