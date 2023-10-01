@@ -8,16 +8,19 @@ import com.axreng.backend.infrastructure.threads.TaskQueue;
 import com.axreng.backend.infrastructure.threads.ThreadPoolService;
 import com.axreng.backend.presentation.web.SparkAdapter;
 import com.axreng.backend.presentation.web.controllers.SearchTermController;
+import com.axreng.backend.shared.EnvironmentVariables;
 import spark.Route;
 
+import java.net.MalformedURLException;
+
 public class Main {
-    public static void main(String[] args) {
 
-        String baseUrl = System.getenv("BASE_URL");
 
-        if (baseUrl == null) {
-            throw new RuntimeException("BASE_URL environment variable not set");
-        }
+    public static void main(String[] args) throws MalformedURLException {
+
+        var envManager = EnvironmentVariables.getInstance();
+
+        String baseUrl = envManager.getBaseURL();
 
         HttpClient<Route> client = new SparkAdapter();
         TaskQueue taskQueue = ThreadPoolService.getInstance();
