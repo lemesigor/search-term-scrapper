@@ -23,12 +23,12 @@ import java.util.regex.Pattern;
 public class ScrapeTermUseCase {
 
 
-    private  String url;
+    private String url;
 
     private final Set<String> visitedUrls;
     private final Set<String> foundUrls;
 
-    private final Logger logger =  LoggerFactory.getLogger(ScrapeTermUseCase.class);
+    private final Logger logger = LoggerFactory.getLogger(ScrapeTermUseCase.class);
 
     private final TaskQueue poolService;
 
@@ -56,7 +56,14 @@ public class ScrapeTermUseCase {
     }
 
     public void execute(String termId, String baseUrl) {
-        this.temporarySearchTerm = repository.findById(termId).get();
+        try {
+            this.temporarySearchTerm = repository.findById(termId)
+                    .orElseThrow(() -> new NoSuchElementException("termId not found"));
+        } catch (NoSuchElementException e) {
+            logger.error(e.getMessage());
+            return;
+        }
+
         this.url = baseUrl;
 
         String wordRegexPattern = "\\b" + this.temporarySearchTerm.getWord() + "\\b";
@@ -98,7 +105,7 @@ public class ScrapeTermUseCase {
             visitedUrlsCount.incrementAndGet();
 
             if (isFinalThreadInteraction()) {
-                logger.info("result set final de " + term + " "+ this.temporarySearchTerm.getUrls());
+                logger.info("result set final de " + term + " " + this.temporarySearchTerm.getUrls());
 
                 updateSearchTermStatusToDone(this.temporarySearchTerm);
 
@@ -144,7 +151,6 @@ public class ScrapeTermUseCase {
     }
 
 
-
     private Boolean isUrlAlreadyFound(String url) {
         return this.foundUrls.contains(url);
     }
@@ -164,7 +170,7 @@ public class ScrapeTermUseCase {
             return new URL(uriString);
         }
 
-        if (uriString.startsWith("../")){
+        if (uriString.startsWith("../")) {
             return new URL(this.url + uriString.replace("../", ""));
         }
 
