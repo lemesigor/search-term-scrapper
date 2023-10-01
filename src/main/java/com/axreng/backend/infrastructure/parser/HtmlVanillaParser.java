@@ -9,15 +9,18 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class HtmlVanillaParser implements HtmlParser{
+public class HtmlVanillaParser implements HtmlParser {
 
     @Override
-    public List<String> parseContentAsStringList(URL url) throws IOException {
+    public List<String> parseContentAsStringList(String urlString) throws IOException {
         try {
-           BufferedReader htmlLines = new BufferedReader(new InputStreamReader(url.openStream()));
+            URL url = new URL(urlString);
+            BufferedReader htmlLines = new BufferedReader(new InputStreamReader(url.openStream()));
             Stream<String> lines = htmlLines.lines();
 
-            var linesList = lines.collect(Collectors.toList()).stream().map(HtmlNormalizationHelper::normalizeHtml).collect(Collectors.toList());
+            var linesList = lines.parallel()
+                    .map(HtmlNormalizationHelper::normalizeHtml)
+                    .collect(Collectors.toList());
 
             htmlLines.close();
 
@@ -28,7 +31,7 @@ public class HtmlVanillaParser implements HtmlParser{
     }
 
     @Override
-    public Boolean hasKeywordInHtmlAsStringList(List<String> htmlAsList, String keywordRegexPattern)  {
+    public Boolean hasKeywordInHtmlAsStringList(List<String> htmlAsList, String keywordRegexPattern) {
         Pattern patternToFound = Pattern.compile(keywordRegexPattern, Pattern.CASE_INSENSITIVE);
         return htmlAsList.stream().anyMatch(line -> patternToFound.matcher(line).find());
 

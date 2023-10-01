@@ -2,6 +2,7 @@ package com.axreng.backend.application.usecases;
 
 import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
+import com.axreng.backend.infrastructure.cache.WebSiteCache;
 import com.axreng.backend.infrastructure.parser.HtmlParser;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import com.axreng.backend.infrastructure.threads.TaskQueue;
@@ -45,6 +46,8 @@ public class ScrapeTermUseCase {
 
     private final HtmlParser htmlParser;
 
+    private final WebSiteCache webSiteCache = WebSiteCache.getInstance();
+
     public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService, HtmlParser htmlParser) {
         this.repository = repository;
         this.visitedUrls = new HashSet<>();
@@ -74,11 +77,15 @@ public class ScrapeTermUseCase {
 
 
     private void scrape(String currentUrl, String term) {
+        List<String> htmlContentLinesList;
 
         try {
-            final URL urlObj = new URL(currentUrl);
-
-            List<String> htmlContentLinesList = this.htmlParser.parseContentAsStringList(urlObj);
+            if (!this.webSiteCache.containsKey(currentUrl)) {
+                htmlContentLinesList = this.htmlParser.parseContentAsStringList(currentUrl);
+                this.webSiteCache.put(currentUrl, htmlContentLinesList);
+            } else {
+                htmlContentLinesList = this.webSiteCache.get(currentUrl);
+            }
 
             if (this.htmlParser.hasKeywordInHtmlAsStringList(htmlContentLinesList, term)) {
                 this.temporarySearchTerm.addUrl(currentUrl);
@@ -100,7 +107,7 @@ public class ScrapeTermUseCase {
             visitedUrlsCount.incrementAndGet();
 
             if (isFinalThreadInteraction()) {
-                logger.info("result set final de " + term + " " + this.temporarySearchTerm.getUrls());
+                logger.info("finished scraper for url: " + this.url + " and id: " + this.temporarySearchTerm.getId());
 
                 updateSearchTermStatusToDone(this.temporarySearchTerm);
 
@@ -134,9 +141,9 @@ public class ScrapeTermUseCase {
                     continue;
                 }
 
-                String urlString =url.toString();
+                String urlString = url.toString();
 
-                if (!this.isUrlAlreadyFound(urlString) && !this.isUrlAlreadyVisited(urlString)) {
+                if (!isUrlAlreadyFoundOrVisited(urlString)) {
                     internalFoundedUrls.add(urlString);
                     this.foundUrls.add(urlString);
                 }
@@ -145,6 +152,10 @@ public class ScrapeTermUseCase {
         return internalFoundedUrls;
     }
 
+
+    private Boolean isUrlAlreadyFoundOrVisited(String urlString) {
+        return this.isUrlAlreadyFound(urlString) || this.isUrlAlreadyVisited(urlString);
+    }
 
     private Boolean isUrlAlreadyFound(String url) {
         return this.foundUrls.contains(url);

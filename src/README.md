@@ -10,4 +10,4 @@
 - [ ] Add tests at least unit
 - [/] Refactor scrappe class
 - [x] See other url patterns that doenst end with html and are absolute (won't implement this)
-- [ ] Refactor regex to get substring as well
+- [x] Refactor regex to get substring as well

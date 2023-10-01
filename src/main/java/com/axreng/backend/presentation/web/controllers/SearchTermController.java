@@ -74,8 +74,6 @@ public class SearchTermController {
                 var startScrapeUseCase = useCaseFactory.createScrapeTermUseCase();
                 startScrapeUseCase.execute(wordIdAfterCreated, baseUrl);
 
-                logger.info("Scrape started");
-
                 return new Gson().toJson(new AddSearchTermResponseDTO(wordIdAfterCreated));
 
             } catch (Exception e) {
