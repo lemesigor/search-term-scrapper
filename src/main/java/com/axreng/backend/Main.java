@@ -4,6 +4,8 @@ import com.axreng.backend.application.factory.RepositoryFactory;
 import com.axreng.backend.application.factory.UseCaseFactory;
 import com.axreng.backend.infrastructure.database.InMemoryDBFactory;
 import com.axreng.backend.infrastructure.http.HttpClient;
+import com.axreng.backend.infrastructure.parser.HtmlParser;
+import com.axreng.backend.infrastructure.parser.HtmlVanillaParser;
 import com.axreng.backend.infrastructure.threads.TaskQueue;
 import com.axreng.backend.infrastructure.threads.ThreadPoolService;
 import com.axreng.backend.presentation.web.SparkAdapter;
@@ -24,9 +26,11 @@ public class Main {
 
         HttpClient<Route> client = new SparkAdapter();
         TaskQueue taskQueue = ThreadPoolService.getInstance();
+        HtmlParser htmlParser = new HtmlVanillaParser();
+
 
         RepositoryFactory inMemoryDBFactory = new InMemoryDBFactory();
-        UseCaseFactory useCaseFactory = new UseCaseFactory(inMemoryDBFactory, taskQueue);
+        UseCaseFactory useCaseFactory = new UseCaseFactory(inMemoryDBFactory, taskQueue, htmlParser);
 
         SearchTermController controller = new SearchTermController(client, baseUrl, useCaseFactory);
 

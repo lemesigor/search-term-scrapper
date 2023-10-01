@@ -2,15 +2,14 @@ package com.axreng.backend.application.usecases;
 
 import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
+import com.axreng.backend.infrastructure.parser.HtmlParser;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import com.axreng.backend.infrastructure.threads.TaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -19,8 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 
 public class ScrapeTermUseCase {
 
@@ -43,29 +41,30 @@ public class ScrapeTermUseCase {
 
     private static final String ANCHOR_LINK_REGEX = "href=\"(.*?)\"";
 
-
-    private static final Integer THREAD_TIMEOUT = 1200;
-
     private SearchTerm temporarySearchTerm;
 
+    private final HtmlParser htmlParser;
 
-    public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService) {
+    public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService, HtmlParser htmlParser) {
         this.repository = repository;
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
         this.totalUrlsToVisit = new AtomicInteger(1);
         this.visitedUrlsCount = new AtomicInteger(0);
         this.poolService = poolService;
+        this.htmlParser = htmlParser;
     }
 
     public void execute(String termId, String baseUrl) {
         this.temporarySearchTerm = repository.findById(termId).get();
         this.url = baseUrl;
 
+        String wordRegexPattern = "\\b" + this.temporarySearchTerm.getWord() + "\\b";
+
         logger.info("Starting scraper for url: " + this.url + " and term: " + this.temporarySearchTerm.getWord());
 
         CompletableFuture.runAsync(() -> {
-            poolService.addTask(() -> scrape(this.url, this.temporarySearchTerm.getWord()));
+            poolService.addTask(() -> scrape(this.url, wordRegexPattern));
 
         }, poolService.getExecutor());
     }
@@ -76,9 +75,9 @@ public class ScrapeTermUseCase {
         try {
             final URL urlObj = new URL(currentUrl);
 
-            List<String> htmlContentLinesList = this.getHtmlContentLinesList(urlObj);
+            List<String> htmlContentLinesList = this.htmlParser.parseContentAsStringList(urlObj);
 
-            if (searchKeyword(htmlContentLinesList, term)) {
+            if (this.htmlParser.hasKeywordInHtmlAsStringList(htmlContentLinesList, term)) {
                 this.temporarySearchTerm.addUrl(currentUrl);
                 updateSearchTermFoundUrls(this.temporarySearchTerm);
             }
@@ -98,16 +97,15 @@ public class ScrapeTermUseCase {
             visitedUrls.add(currentUrl);
             visitedUrlsCount.incrementAndGet();
 
+            if (isFinalThreadInteraction()) {
+                logger.info("result set final de " + term + " "+ this.temporarySearchTerm.getUrls());
+
+                updateSearchTermStatusToDone(this.temporarySearchTerm);
+
+            }
+
         } catch (IOException e) {
             logger.error(e.getMessage());
-        }
-
-
-        if (isFinalThreadInteraction()) {
-            logger.info("result set final de " + term + " "+ this.temporarySearchTerm.getUrls());
-
-            updateSearchTermStatusToDone(this.temporarySearchTerm);
-
         }
     }
 
@@ -177,27 +175,8 @@ public class ScrapeTermUseCase {
         return null;
     }
 
-
-    private Boolean searchKeyword(List<String> htmlAsLines, String keyword) {
-        String keywordPattern = "\\b" + keyword + "\\b";
-        Pattern patternToFound = Pattern.compile(keywordPattern, Pattern.CASE_INSENSITIVE);
-        return htmlAsLines.stream().anyMatch(line -> patternToFound.matcher(line).find());
-    }
-
     private boolean shouldIncludeUrl(String urlString) {
         return urlString.endsWith(HTML_EXTENSION) && !urlString.startsWith(MAILTO_PREFIX);
-    }
-
-    public List<String> getHtmlContentLinesList(URL url) throws IOException {
-
-        BufferedReader htmlLines = new BufferedReader(new InputStreamReader(url.openStream()));
-        Stream<String> lines = htmlLines.lines();
-
-        var linesList = lines.collect(Collectors.toList());
-
-        htmlLines.close();
-
-        return linesList;
     }
 
     private void updateSearchTermFoundUrls(SearchTerm searchTerm) {
