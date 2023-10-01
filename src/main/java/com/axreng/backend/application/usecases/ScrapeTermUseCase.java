@@ -86,15 +86,14 @@ public class ScrapeTermUseCase {
                 updateSearchTermFoundUrls(this.temporarySearchTerm);
             }
 
-            Map<String, URL> internalUrls = findInternalUrlsForCurrentPage(htmlContentLinesList, currentUrl);
+            HashSet<String> internalUrls = findInternalUrlsForCurrentPage(htmlContentLinesList, currentUrl);
 
-            for (URL internalUrl : internalUrls.values()) {
-                String newUrl = internalUrl.toString();
+            for (String internalUrl : internalUrls) {
 
-                if (!this.isUrlAlreadyVisited(newUrl)) {
+                if (!this.isUrlAlreadyVisited(internalUrl)) {
                     totalUrlsToVisit.incrementAndGet();
-                    poolService.addTask(() -> scrape(newUrl, term));
-                    foundUrls.add(newUrl);
+                    poolService.addTask(() -> scrape(internalUrl, term));
+                    foundUrls.add(internalUrl);
                 }
             }
 
@@ -113,22 +112,22 @@ public class ScrapeTermUseCase {
         }
     }
 
-    private Map<String, URL> findInternalUrlsForCurrentPage(List<String> lines, String actualUrl) throws MalformedURLException {
-        Map<String, URL> internalUrls = new HashMap<>();
+    private HashSet<String> findInternalUrlsForCurrentPage(List<String> htmlList, String actualUrl) throws MalformedURLException {
+        HashSet<String> internalFoundedUrls = new HashSet<>();
 
         Pattern patternToFound = Pattern.compile(ANCHOR_LINK_REGEX, Pattern.DOTALL);
 
-        for (String line : lines) {
+        for (String line : htmlList) {
             Matcher matcherResults = patternToFound.matcher(line);
 
             while (matcherResults.find()) {
-                String urlString = matcherResults.group().split("\"")[1];
+                String candidateUrlString = matcherResults.group().split("\"")[1];
 
-                if (!shouldIncludeUrl(urlString)) {
+                if (!shouldIncludeUrl(candidateUrlString)) {
                     continue;
                 }
 
-                URI uri = URI.create(urlString);
+                URI uri = URI.create(candidateUrlString);
 
                 URL url = constructNewUrl(uri, actualUrl);
 
@@ -136,15 +135,15 @@ public class ScrapeTermUseCase {
                     continue;
                 }
 
-                urlString = url.toString();
+                String urlString =url.toString();
 
-                if (!this.isUrlAlreadyFound(urlString) && !this.isUrlAlreadyVisited(urlString) && !internalUrls.containsKey(urlString)) {
-                    internalUrls.put(urlString, url);
+                if (!this.isUrlAlreadyFound(urlString) && !this.isUrlAlreadyVisited(urlString)) {
+                    internalFoundedUrls.add(urlString);
                     this.foundUrls.add(urlString);
                 }
             }
         }
-        return internalUrls;
+        return internalFoundedUrls;
     }
 
 
