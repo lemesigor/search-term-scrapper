@@ -44,41 +44,30 @@ public class ScrapeTermUseCase {
 
     private static final String ANCHOR_LINK_REGEX = "href=\"(.*?)\"";
 
-    private static final Integer THREAD_POOL_SIZE = 4;
 
     private static final Integer THREAD_TIMEOUT = 1200;
 
     private SearchTerm temporarySearchTerm;
 
 
-    public ScrapeTermUseCase(SearchTermRepository repository) {
+    public ScrapeTermUseCase(SearchTermRepository repository, ExecutorService executor) {
         this.repository = repository;
         this.url = System.getenv("BASE_URL");
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
-        this.executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         this.count = new AtomicInteger(0);
+        this.executor = executor;
     }
 
     public void execute(String termId) {
         this.temporarySearchTerm = repository.findById(termId).get();
 
-        logger.info("Starting scraper for url: " + this.url + "and term: " + this.temporarySearchTerm.getWord());
+        logger.info("Starting scraper for url: " + this.url + " and term: " + this.temporarySearchTerm.getWord());
 
         CompletableFuture.runAsync(() -> {
-            try {
-                executor.submit(() -> scrape(this.url, this.temporarySearchTerm.getWord()));
+            executor.submit(() -> scrape(this.url, this.temporarySearchTerm.getWord()));
 
-                if (!executor.awaitTermination(THREAD_TIMEOUT, TimeUnit.SECONDS) && count.get() > 0) {
-                    executor.shutdownNow(); // Cancel currently executing tasks
-                    if (!executor.awaitTermination(100, TimeUnit.SECONDS))
-                        logger.warn("Pool did not terminate");
-                }
-            } catch (InterruptedException ex) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }, executor);
+        },executor);
     }
 
 
@@ -94,7 +83,6 @@ public class ScrapeTermUseCase {
             if (searchKeyword(htmlContentLinesList, term)) {
                 this.temporarySearchTerm.addUrl(currentUrl);
                 updateSearchTermFoundUrls(this.temporarySearchTerm);
-//                logger.info("result set parcial: " + this.resultSet);
             }
 
             Map<String, URL> internalUrls = findInternalUrlsForCurrentPage(htmlContentLinesList, currentUrl);
@@ -121,7 +109,7 @@ public class ScrapeTermUseCase {
 
             updateSearchTermStatusToDone(this.temporarySearchTerm);
 
-            this.executor.shutdown();
+//            this.executor.shutdown();
         }
     }
 

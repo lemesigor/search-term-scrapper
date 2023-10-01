@@ -3,6 +3,9 @@ package com.axreng.backend.application.factory;
 import com.axreng.backend.application.usecases.AddNewSearchTermUseCase;
 import com.axreng.backend.application.usecases.GetSearchTermResults;
 import com.axreng.backend.application.usecases.ScrapeTermUseCase;
+import com.axreng.backend.infrastructure.threads.ThreadPoolService;
+
+import java.util.concurrent.ExecutorService;
 
 public class UseCaseFactory {
 
@@ -21,6 +24,6 @@ public class UseCaseFactory {
     }
 
     public ScrapeTermUseCase createScrapeTermUseCase() {
-        return new ScrapeTermUseCase(repositoryFactory.createSearchTermRepository());
+        return new ScrapeTermUseCase(repositoryFactory.createSearchTermRepository(), ThreadPoolService.getInstance().getExecutor());
     }
 }
