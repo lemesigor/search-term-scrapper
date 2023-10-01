@@ -2,6 +2,8 @@ package com.axreng.backend;
 
 import com.axreng.backend.application.factory.RepositoryFactory;
 import com.axreng.backend.application.factory.UseCaseFactory;
+import com.axreng.backend.infrastructure.cache.SiteMapCache;
+import com.axreng.backend.infrastructure.cache.SiteMapCacheInMemory;
 import com.axreng.backend.infrastructure.database.InMemoryDBFactory;
 import com.axreng.backend.infrastructure.http.HttpClient;
 import com.axreng.backend.infrastructure.parser.HtmlParser;
@@ -19,7 +21,6 @@ public class Main {
 
 
     public static void main(String[] args) throws MalformedURLException {
-
         var envManager = EnvironmentVariables.getInstance();
 
         String baseUrl = envManager.getBaseURL();
@@ -27,14 +28,13 @@ public class Main {
         HttpClient<Route> client = new SparkAdapter();
         TaskQueue taskQueue = ThreadPoolService.getInstance();
         HtmlParser htmlParser = new HtmlVanillaParser();
-
+        SiteMapCache siteMapCache = SiteMapCacheInMemory.getInstance();
 
         RepositoryFactory inMemoryDBFactory = new InMemoryDBFactory();
-        UseCaseFactory useCaseFactory = new UseCaseFactory(inMemoryDBFactory, taskQueue, htmlParser);
+        UseCaseFactory useCaseFactory = new UseCaseFactory(inMemoryDBFactory, taskQueue, htmlParser, siteMapCache);
 
         SearchTermController controller = new SearchTermController(client, baseUrl, useCaseFactory);
 
         controller.listen();
-
     }
 }

@@ -2,7 +2,7 @@ package com.axreng.backend.application.usecases;
 
 import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;
-import com.axreng.backend.infrastructure.cache.SiteMapCacheInMemory;
+import com.axreng.backend.infrastructure.cache.SiteMapCache;
 import com.axreng.backend.infrastructure.parser.HtmlParser;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;
 import com.axreng.backend.infrastructure.threads.TaskQueue;
@@ -46,9 +46,9 @@ public class ScrapeTermUseCase {
 
     private final HtmlParser htmlParser;
 
-    private final SiteMapCacheInMemory siteMapCacheInMemory = SiteMapCacheInMemory.getInstance();
+    private final SiteMapCache siteMapCache;
 
-    public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService, HtmlParser htmlParser) {
+    public ScrapeTermUseCase(SearchTermRepository repository, TaskQueue poolService, HtmlParser htmlParser, SiteMapCache siteMapCache) {
         this.repository = repository;
         this.visitedUrls = new HashSet<>();
         this.foundUrls = new HashSet<>();
@@ -56,6 +56,7 @@ public class ScrapeTermUseCase {
         this.visitedUrlsCount = new AtomicInteger(0);
         this.poolService = poolService;
         this.htmlParser = htmlParser;
+        this.siteMapCache = siteMapCache;
     }
 
     public void execute(String termId, String baseUrl) {
@@ -80,11 +81,11 @@ public class ScrapeTermUseCase {
         List<String> htmlContentLinesList;
 
         try {
-            if (!this.siteMapCacheInMemory.containsKey(currentUrl)) {
+            if (!this.siteMapCache.containsKey(currentUrl)) {
                 htmlContentLinesList = this.htmlParser.parseContentAsStringList(currentUrl);
-                this.siteMapCacheInMemory.put(currentUrl, htmlContentLinesList);
+                this.siteMapCache.put(currentUrl, htmlContentLinesList);
             } else {
-                htmlContentLinesList = this.siteMapCacheInMemory.get(currentUrl);
+                htmlContentLinesList = this.siteMapCache.get(currentUrl);
             }
 
             if (this.htmlParser.hasKeywordInHtmlAsStringList(htmlContentLinesList, term)) {
