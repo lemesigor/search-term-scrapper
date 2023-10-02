@@ -12,8 +12,6 @@ public class AddNewSearchTermUseCase {
     public AddNewSearchTermUseCase(SearchTermRepository repository) {
         this.repository = repository;
 
-
-
     }
 
     public String execute(String word) {
