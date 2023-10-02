@@ -1,4 +1,4 @@
-package com.axreng.backend.unit;
+package com.axreng.backend.unit.application;
 
 import com.axreng.backend.application.domain.SearchStatus;
 import com.axreng.backend.application.domain.SearchTerm;

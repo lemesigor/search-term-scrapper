@@ -1,4 +1,4 @@
-package com.axreng.backend.unit;
+package com.axreng.backend.unit.application;
 
 import com.axreng.backend.application.usecases.AddNewSearchTermUseCase;
 import com.axreng.backend.infrastructure.storage.SearchTermRepository;

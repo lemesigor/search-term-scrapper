@@ -79,7 +79,6 @@ public class ScrapeTermUseCase {
 
     private void scrape(String currentUrl, String term) {
         List<String> htmlContentLinesList;
-        logger.info("no inicio");
         try {
             if (!this.siteMapCache.containsKey(currentUrl)) {
                 htmlContentLinesList = this.htmlParser.parseContentAsStringList(currentUrl);
@@ -89,7 +88,6 @@ public class ScrapeTermUseCase {
             }
 
             if (this.htmlParser.hasKeywordInHtmlAsStringList(htmlContentLinesList, term)) {
-                logger.info("aquiiiii");
                 this.temporarySearchTerm.addUrl(currentUrl);
                 updateSearchTermFoundUrls(this.temporarySearchTerm);
             }
@@ -194,7 +192,6 @@ public class ScrapeTermUseCase {
     }
 
     private void updateSearchTermFoundUrls(SearchTerm searchTerm) {
-        logger.info("aquiiii");
         repository.update(searchTerm);
     }
 
