@@ -72,9 +72,9 @@ simplicity, testability and maintainability if any change is needed, decoupling 
 Also, the project relies on a few design patterns and engineering practices (SOLID, Clean Code, OOP core concepts) to make the code maintainable, testable and performant. Such as:
 
 
-#### Dependency Injection
+#### Dependency Inversion
 
-The application relies heavily on dependency injection to inject the dependencies into the classes. The dependency injection is done manually in the `Main` class, which is the main composition root of the application.
+The application relies heavily on dependency inversion and dependency injection in order to inject the dependencies into the classes. The dependency injection is done manually in the `Main` class, which is the main composition root of the application.
 All The dependencies in the presentation layer are being injected manually as well
 
 #### Factory
@@ -107,5 +107,5 @@ The summary of the business rules of the application which includes the core app
 The infrastructure layer is responsible for the external dependencies of the application, such as database, cache, http, etc. It's main dependencies that are being injected in the application and that have a direct impact on the application are:
 
 - `infrastucture/thread`: Responsible for creating threads to run the application in parallel. Every parsing of the website is done in a separate thread.
-- `infrastructure/cache`:  Responsible for caching the website content so that the application doesn't need to fetch the website content every time a request is made. In this project, it's being used a simple in-memory cache to store the website content.
+- `infrastructure/cache`:  Responsible for caching the website content so that the application doesn't need to fetch the website content every time a request is made. In this project, it's being used a simple in-memory cache to store the website content. It will keep alive until the application is finished.
 - `infrastructure/database`: Responsible for the database connection and queries. In this project, it's being used a simple in-memory database to store the words and their results.

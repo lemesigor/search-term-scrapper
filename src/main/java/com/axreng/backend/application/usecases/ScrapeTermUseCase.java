@@ -23,23 +23,16 @@ import java.util.regex.Pattern;
 
 public class ScrapeTermUseCase {
 
-
     private String url;
-
     private final Set<String> visitedUrls;
     private final Set<String> foundUrls;
-
     private final Logger logger = LoggerFactory.getLogger(ScrapeTermUseCase.class);
-
     private final TaskQueue poolService;
-
-
     private final SearchTermRepository repository;
     private final AtomicInteger totalUrlsToVisit;
     private final AtomicInteger visitedUrlsCount;
     private static final String HTML_EXTENSION = ".html";
     private static final String MAILTO_PREFIX = "mailto";
-
     private static final String ANCHOR_LINK_REGEX = "href=\"(.*?)\"";
 
     private SearchTerm temporarySearchTerm;
@@ -63,17 +56,15 @@ public class ScrapeTermUseCase {
         try {
             this.temporarySearchTerm = repository.findById(termId)
                     .orElseThrow(() -> new NoSuchElementException("termId not found"));
+
+            this.url = baseUrl;
+
+            logger.info("Starting scraper for url: " + this.url + " and term: " + this.temporarySearchTerm.getWord());
+
+            CompletableFuture.runAsync(() -> poolService.addTask(() -> scrape(this.url, this.temporarySearchTerm.getWord())), poolService.getExecutor());
         } catch (NoSuchElementException e) {
             logger.error(e.getMessage());
-            return;
         }
-
-        this.url = baseUrl;
-
-
-        logger.info("Starting scraper for url: " + this.url + " and term: " + this.temporarySearchTerm.getWord());
-
-        CompletableFuture.runAsync(() -> poolService.addTask(() -> scrape(this.url, this.temporarySearchTerm.getWord())), poolService.getExecutor());
     }
 
 
@@ -110,7 +101,6 @@ public class ScrapeTermUseCase {
                 logger.info("finished scraper for url: " + this.url + " and id: " + this.temporarySearchTerm.getId());
 
                 updateSearchTermStatusToDone(this.temporarySearchTerm);
-
             }
 
         } catch (IOException e) {
@@ -133,19 +123,11 @@ public class ScrapeTermUseCase {
                     continue;
                 }
 
-                URI uri = URI.create(candidateUrlString);
+                String url = createUrlFullPath(candidateUrlString, actualUrl);
 
-                URL url = constructNewUrl(uri, actualUrl);
-
-                if (url == null) {
-                    continue;
-                }
-
-                String urlString = url.toString();
-
-                if (!isUrlAlreadyFoundOrVisited(urlString)) {
-                    internalFoundedUrls.add(urlString);
-                    this.foundUrls.add(urlString);
+                if (!url.isEmpty() && !isUrlAlreadyFoundOrVisited(url)) {
+                    internalFoundedUrls.add(url);
+                    this.foundUrls.add(url);
                 }
             }
         }
@@ -169,22 +151,22 @@ public class ScrapeTermUseCase {
         return totalUrlsToVisit.get() == visitedUrlsCount.get();
     }
 
-    private URL constructNewUrl(URI uri, String currentUrl) throws MalformedURLException {
-        String uriString = uri.toString();
+    private String createUrlFullPath(String candidateUrl, String currentUrl) throws MalformedURLException {
+        URI uri = URI.create(candidateUrl);
 
-        if (uri.isAbsolute() && uriString.contains(currentUrl)) {
-            return new URL(uriString);
+        if (uri.isAbsolute() && candidateUrl.contains(currentUrl)) {
+            return new URL(candidateUrl).toString();
         }
 
-        if (uriString.startsWith("../")) {
-            return new URL(this.url + uriString.replace("../", ""));
+        if (candidateUrl.startsWith("../")) {
+            return new URL(this.url + candidateUrl.replace("../", "")).toString();
         }
 
         if (!uri.isAbsolute()) {
-            return new URL(this.url + uri);
+            return new URL(this.url + uri).toString();
         }
 
-        return null;
+        return "";
     }
 
     private boolean shouldIncludeUrl(String urlString) {
@@ -199,5 +181,4 @@ public class ScrapeTermUseCase {
         searchTerm.setStatus(SearchStatus.done);
         repository.update(searchTerm);
     }
-
 }
