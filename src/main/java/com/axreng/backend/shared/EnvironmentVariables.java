@@ -10,7 +10,7 @@ public class EnvironmentVariables {
     private final static EnvironmentVariables instance = new EnvironmentVariables();
 
     private final static String BASE_URL = "BASE_URL";
-    private final static String DEFAULT_URL = "http://hiring.axreng.com/";
+    public final static String DEFAULT_URL = "http://hiring.axreng.com/";
 
     private final Logger logger = LoggerFactory.getLogger(EnvironmentVariables.class);
     public static EnvironmentVariables getInstance() {
@@ -20,8 +20,8 @@ public class EnvironmentVariables {
     private EnvironmentVariables() {
     }
 
-    public String getBaseURL(Function<String,String> env) throws MalformedURLException {
-        String url = env.apply(BASE_URL);
+    public String getBaseURL(Function<String,String> envGetter) throws MalformedURLException {
+        String url = envGetter.apply(BASE_URL);
 
         if (url == null) {
             logger.info("BASE_URL environment variable not set, using the default one");
