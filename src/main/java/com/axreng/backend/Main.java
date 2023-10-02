@@ -23,7 +23,7 @@ public class Main {
     public static void main(String[] args) throws MalformedURLException {
         var envManager = EnvironmentVariables.getInstance();
 
-        String baseUrl = envManager.getBaseURL();
+        String baseUrl = envManager.getBaseURL(System::getenv);
 
         HttpClient<Route> client = new SparkAdapter();
         TaskQueue taskQueue = ThreadPoolService.getInstance();
