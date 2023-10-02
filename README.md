@@ -55,14 +55,25 @@ The project is structure is inspired by Hexagonal Architecture, where the main c
     │   │               │           └── responses   # Translate domain-object to http-object (DTO)
     │   │               └── shared                  # Utility code shared across the application
     │   └── resources
-    └── test
-        └── java
 
 
 
 # *******************************************
 # **       application tests code          **
 # *******************************************
+        └── test-classes
+                    ├── integration                 # Integration tests that will actually hit datasource, receive requests,etc    
+                    │   └── presentation
+                    │       └── web                 # Test the REST api laywer of the application
+                    │           └── utils           # General utilities in order to test the REST api
+
+                    └── unit                        # Unit tests that will test the business logic of the application and isolated modules
+                        ├── application
+                        ├── infrastructure          # Test infrastructure layer dependencies isolated
+                        └── shared                  # Test shared code dependencies isolated
+
+
+
 ```
 ### Project Architecture and Code Design
 
