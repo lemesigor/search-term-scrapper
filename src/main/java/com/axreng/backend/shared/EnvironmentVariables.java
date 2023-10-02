@@ -1,13 +1,18 @@
 package com.axreng.backend.shared;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.function.Function;
 
 public class EnvironmentVariables {
     private final static EnvironmentVariables instance = new EnvironmentVariables();
 
     private final static String BASE_URL = "BASE_URL";
+    private final static String DEFAULT_URL = "http://hiring.axreng.com/";
 
+    private final Logger logger = LoggerFactory.getLogger(EnvironmentVariables.class);
     public static EnvironmentVariables getInstance() {
         return instance;
     }
@@ -15,11 +20,12 @@ public class EnvironmentVariables {
     private EnvironmentVariables() {
     }
 
-    public String getBaseURL() throws MalformedURLException {
-        String url = System.getenv(BASE_URL);
+    public String getBaseURL(Function<String,String> env) throws MalformedURLException {
+        String url = env.apply(BASE_URL);
 
         if (url == null) {
-            throw new RuntimeException("BASE_URL environment variable not set, please set it");
+            logger.info("BASE_URL environment variable not set, using the default one");
+            url = DEFAULT_URL;
         }
 
         if (!url.endsWith("/")) {
