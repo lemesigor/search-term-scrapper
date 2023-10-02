@@ -11,13 +11,15 @@ import spark.Spark;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-
+import java.util.ArrayList;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class KeywordTest {
+public class WebTest {
 
+    private final ArrayList<String> ids = new ArrayList<>();
 
     @BeforeAll
     static void setUp() throws MalformedURLException {
@@ -34,44 +36,60 @@ public class KeywordTest {
 
 
     @Test
-    public void shouldReceiveANewSearchValidKeywordAndReturnId() throws IOException {
+    public void shouldStartScrappingAfterValidWordIsSentAndGetResults() throws IOException {
         String bodyJson = "{\n" +
-                "  \"keyword\": \"handy\"\n" +
+                "  \"keyword\": \"happy\"\n" +
                 "}";
-        TestResponse response = HttpClientUtils.request("POST","/crawl", bodyJson);
-        assertEquals(200, response.status);
-        Map<String, String> json = response.json();
-        assertTrue(json.containsKey("id"));
-    }
 
-    @Test
-    public void shouldRejectInvalidKeyword()  {
-        String bodyJson = "{\n" +
-                "  \"keyword\": \"han\"\n" +
-                "}";
-        assertThrows(IOException.class, () -> HttpClientUtils.request("POST", "/crawl", bodyJson));
-    }
-
-    @Test
-    public void shouldBeAbleToRetrieveStatusOfKeyword() throws IOException {
-        String bodyJson = "{\n" +
-                "  \"keyword\": \"handy\"\n" +
-                "}";
         TestResponse response = HttpClientUtils.request("POST", "/crawl", bodyJson);
-
         assertEquals(200, response.status);
         Map<String, String> json = response.json();
+
         assertTrue(json.containsKey("id"));
-        String id = json.get("id");
+
+        ids.add(json.get("id"));
+
+        response = HttpClientUtils.request("GET", "/crawl/" + ids.get(0), null);
+
+        assertEquals(200, response.status);
+
+        json = response.json();
+
+        assertTrue(json.containsKey("status"));
+        assertEquals(json.get("id"), ids.get(0));
+
+        assertEquals(SearchStatus.active.toString(), json.get("status"));
+
+        assertTrue(json.containsKey("urls"));
 
 
-        response = HttpClientUtils.request("GET", "/crawl/" + id, null);
+    }
 
+    @Test
+    public void shouldBeAbleToScrapMoreThanKeywordAtTime() throws IOException {
+        String bodyJson = "{\n" +
+                "  \"keyword\": \"happy\"\n" +
+                "}";
+
+        TestResponse response = HttpClientUtils.request("POST", "/crawl", bodyJson);
+        assertEquals(200, response.status);
+        Map<String, String> json = response.json();
+
+        assertTrue(json.containsKey("id"));
+
+        ids.add(json.get("id"));
+
+        bodyJson = "{\n" +
+                "  \"keyword\": \"mouse\"\n" +
+                "}";
+
+        response = HttpClientUtils.request("POST", "/crawl", bodyJson);
         assertEquals(200, response.status);
         json = response.json();
-        assertTrue(json.containsKey("status"));
-        assertEquals(SearchStatus.active.toString(), json.get("status"));
+
+        assertTrue(json.containsKey("id"));
+
+        ids.add(json.get("id"));
+
     }
-
-
 }

@@ -40,7 +40,7 @@ The project is structure is inspired by Hexagonal Architecture, where the main c
     │   │               ├── application             # Application layer with the core business logic
     │   │               │   ├── domain              # Domain layer with the business entities
     │   │               │   ├── factory             # Factory classes to create objects
-    │   │               │   └── usecases            # Business behaviour logic (sevices)
+    │   │               │   └── usecases            # Business behaviour logic (services)
     │   │               ├── infrastructure          # Infrastructure layer with the external dependencies
     │   │               │   ├── cache            
     │   │               │   ├── database         
@@ -66,7 +66,7 @@ The project is structure is inspired by Hexagonal Architecture, where the main c
 ```
 ### Project Architecture and Code Design
 
-The project is structured in layers based on [Hexgonal Architechture](https://netflixtechblog.com/ready-for-changes-with-hexagonal-architecture-b315ec967749) due it's
+The project is structured in layers based on [Hexagonal Architecture](https://netflixtechblog.com/ready-for-changes-with-hexagonal-architecture-b315ec967749) due it's
 simplicity, testability and maintainability if any change is needed, decoupling the business logic from the external dependencies.
 
 Also, the project relies on a few design patterns and engineering practices (SOLID, Clean Code, OOP core concepts) to make the code maintainable, testable and performant. Such as:
@@ -91,7 +91,7 @@ A few dependencies are being created using the singleton pattern in order to kee
 The summary of the business rules of the application which includes the core application layer and the web api layer are:
 * Given a word between 4 and 32 characters, the application should be able to scrape a website and return the internal urls for the word.
 * The application will look for the world only in the internal urls of the website including the times that the world appear as a substring.
-* An environment variable `BASE_URL` **must** be set in order to run the application.
+* An environment variable `BASE_URL` **must** be set in order to run the application otherwise it will use a default URL.
 * In order to scrape a website, a `POST` request must be made to `/crawl` with the following payload:
 ```json
 {
@@ -106,6 +106,6 @@ The summary of the business rules of the application which includes the core app
 ### Infrastructure Layer
 The infrastructure layer is responsible for the external dependencies of the application, such as database, cache, http, etc. It's main dependencies that are being injected in the application and that have a direct impact on the application are:
 
-- `infrastucture/thread`: Responsible for creating threads to run the application in parallel. Every parsing of the website is done in a separate thread.
+- `infrastructure/thread`: Responsible for creating threads to run the application in parallel. Every parsing of the website is done in a separate thread.
 - `infrastructure/cache`:  Responsible for caching the website content so that the application doesn't need to fetch the website content every time a request is made. In this project, it's being used a simple in-memory cache to store the website content. It will keep alive until the application is finished.
 - `infrastructure/database`: Responsible for the database connection and queries. In this project, it's being used a simple in-memory database to store the words and their results.
