@@ -79,9 +79,8 @@ public class SearchTermTest {
 
     @Test
     void addUrlShouldAddUrlToUrls() {
-        String validWord = "ValidWord";
         searchTerm = new SearchTerm(validWord);
-        String url = "https://example.com";
+        String url = "https://someurl.com";
 
         searchTerm.addUrl(url);
 
@@ -90,7 +89,6 @@ public class SearchTermTest {
 
     @Test
     void setStatusShouldSetStatus() {
-        String validWord = "ValidWord";
         searchTerm = new SearchTerm(validWord);
         SearchStatus newStatus = SearchStatus.done;
 
