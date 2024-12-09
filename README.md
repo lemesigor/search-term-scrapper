@@ -17,7 +17,7 @@ This project uses the following technologies:
 ### Running the Application
 ```sh
 docker build . -t axreng/backend
-docker run -e BASE_URL=http://hiring.axreng.com/ -p 4567:4567 --rm axreng/backend ## base URL is a must have
+docker run -e BASE_URL=someurl.com -p 4567:4567 --rm axreng/backend ## base URL is a must have
 ```
 
 ### Project structure
