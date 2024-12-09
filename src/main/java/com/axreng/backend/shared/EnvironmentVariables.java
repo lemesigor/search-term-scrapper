@@ -10,7 +10,7 @@ public class EnvironmentVariables {
     private final static EnvironmentVariables instance = new EnvironmentVariables();
 
     private final static String BASE_URL = "BASE_URL";
-    public final static String DEFAULT_URL = "http://hiring.axreng.com/";
+    public final static String DEFAULT_URL = "";
 
     private final Logger logger = LoggerFactory.getLogger(EnvironmentVariables.class);
     public static EnvironmentVariables getInstance() {
