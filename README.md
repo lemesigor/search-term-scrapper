@@ -1,4 +1,4 @@
-# axreng-test
+# search-term-scrapper
 
 REST API to scrape a website and return the number of times a word appears in it.
 
@@ -16,8 +16,8 @@ This project uses the following technologies:
 
 ### Running the Application
 ```sh
-docker build . -t axreng/backend
-docker run -e BASE_URL=someurl.com -p 4567:4567 --rm axreng/backend ## base URL is a must have
+docker build . -t searchterm/backend
+docker run -e BASE_URL=someurl.com -p 4567:4567 --rm searchterm/backend ## base URL is a must have
 ```
 
 ### Project structure
@@ -34,7 +34,7 @@ The project is structure is inspired by Hexagonal Architecture, where the main c
     ├── main
     │   ├── java
     │   │   └── com
-    │   │       └── axreng
+    │   │       └── searchterm
     │   │           └── backend
     │   │               ├── Main.java               # Main composition root
     │   │               ├── application             # Application layer with the core business logic
