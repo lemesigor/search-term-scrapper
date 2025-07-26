@@ -97,6 +97,7 @@ The application relies on factory design pattern to create objects. The factory 
 A few dependencies are being created using the singleton pattern in order to keep the same instance of the object during the application lifecycle such as `infrastructure/database`, `infrastructure/threads`, etc.
 
 
+
 ### Business Rules
 
 The summary of the business rules of the application which includes the core application layer and the web api layer are:
