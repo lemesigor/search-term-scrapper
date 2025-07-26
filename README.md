@@ -1,6 +1,6 @@
 # search-term-scrapper
 
-REST API to scrape a website and return the number of times a word appears in it.
+REST API to scrape a website and return the number of times a words appears in it.
 
 ## Overview
 
